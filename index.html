@@ -176,7 +176,7 @@ h3 { font-family: var(--font-display); font-weight: 600; font-size: 16px; margin
 .p-fb.ok { color: #7be07b; }
 .p-fb.bad { color: #ff8a8a; }
 .p-fb.hint { color: var(--accent); }
-.p-fact { grid-column: 1 / -1; font-size: 13px; line-height: 1.35; color: var(--muted); border-left: 2px solid var(--accent); padding-left: 8px; margin-top: 4px; }
+.p-fact { grid-column: 1 / -1; font-size: 13px; line-height: 1.35; color: var(--muted); border-left: 2px solid var(--accent); padding-left: 8px; margin-top: 4px; min-height: 4.05em; }
 .p-fact b, .info .i-fact b { color: var(--text); font-weight: 600; }
 .info .i-fact { font-size: 14px; background: var(--panel-2); border-radius: 8px; padding: 8px 10px; }
 .answer { flex: none; display: flex; flex-direction: column; gap: 8px; }
@@ -318,7 +318,7 @@ h3 { font-family: var(--font-display); font-weight: 600; font-size: 16px; margin
         <div class="p-main" id="pMain">&nbsp;</div>
         <div class="p-side"><span class="tries" id="pTries"></span><button class="chip-btn" id="hintBtn">Hint</button></div>
         <div class="p-fb" id="pFb" aria-live="polite"></div>
-        <div class="p-fact" id="pFact" hidden></div>
+        <div class="p-fact" id="pFact"></div>
       </div>
       <div class="mapwrap">
         <div class="mapbox" id="gameMap"><div class="loading">Loading the map</div></div>
@@ -1642,7 +1642,7 @@ $('#gZin').onclick = () => gameMap.zoomBy(1.8); $('#gZout').onclick = () => game
 function startRound(cfg) {
   const viewSet = cfg.kind === 'normal' ? cfg.setId : viewSetFor(cfg.scope, cfg.ids);
   R = Object.assign({}, cfg, { viewSet, i: 0, results: [], t0: Date.now(), cur: null, tries: 0, hint: false, waiting: false, done: false });
-  showScreen('game');
+  showScreen('game'); showFact(null);
   gameMap.clearStates(); gameMap.clearRing(); gameMap.setNames([]);
   const inSet = cfg.kind === 'normal' ? null : new Set(setItems(cfg.scope, viewSet).map(i => i.id));
   gameMap.show(cfg.scope, viewSet, { inSet }).then(() => { if (R && !R.cur) nextQ(); });
@@ -1662,7 +1662,7 @@ function updateTop() {
 }
 const FACTS = window.GEO_FACTS || { world: {}, us: {} };
 const factOf = (scope, id) => (FACTS[scope] || {})[id] || '';
-function showFact(id) { const e = $('#pFact'); const f = id ? factOf(R.scope, id) : ''; e.hidden = !f; e.innerHTML = f ? '<b>Did you know?</b> ' + esc(f) : ''; }
+function showFact(id) { const e = $('#pFact'); const f = id ? factOf(R.scope, id) : ''; e.innerHTML = f ? '<b>' + esc(item(R.scope, id).name) + ':</b> ' + esc(f) : 'A fun fact shows here after each answer.'; }
 function fb(text, cls) { const e = $('#pFb'); e.textContent = text; e.className = 'p-fb' + (cls ? ' ' + cls : ''); }
 function nextQ() {
   if (!R || R.done) return;
@@ -1672,7 +1672,7 @@ function nextQ() {
   R.cur = id; R.tries = 0; R.hint = false; R.waiting = false; R.picked = null;
   gameMap.clearRing();
   const noun = NOUN[R.scope][0];
-  fb(''); showFact(null);
+  fb('');
   $('#hintBtn').disabled = false;
   if (R.mode === 'find') { $('#pLabel').textContent = 'Find'; $('#pMain').textContent = it.name; }
   else if (R.mode === 'capfind') { $('#pLabel').textContent = `Which ${noun} has this capital?`; $('#pMain').textContent = it.capital; }
@@ -1716,7 +1716,7 @@ $('#hintBtn').onclick = () => {
 function points(tries, hint) { return [1, 0.5, 0.25][tries] * (hint ? 0.5 : 1); }
 function recordQ(pts, firstOk, extra) {
   R.results.push(Object.assign({ id: R.cur, pts, firstOk, tries: R.tries, hint: R.hint }, extra || {}));
-  Store.record(R.scope, R.mode, R.cur, firstOk); Store._saveLocal();
+  Store.record(R.scope, R.mode, R.cur, firstOk); Store._saveLocal(); showFact(R.cur);
   gameMap.addName(R.cur);
   updateTop();
 }
